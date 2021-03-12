@@ -69,9 +69,6 @@ int add(IntSetInternal *list, int val)
         }
 
         // copy data
-        for (int i = 0; i < list->size; i++) {
-            newArray[i] = oldArray[i];
-        }
 		memcpy(newArray, oldArray, sizeof(int) * list->len);
 
         list->data = newArray;
