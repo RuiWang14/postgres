@@ -1,0 +1,33 @@
+CREATE FUNCTION intset_in(cstring)
+   RETURNS intset
+   AS '_OBJWD_/intset'
+   LANGUAGE C IMMUTABLE STRICT;
+
+
+CREATE FUNCTION intset_out(intset)
+   RETURNS cstring
+   AS '_OBJWD_/intset'
+   LANGUAGE C IMMUTABLE STRICT;
+
+CREATE TYPE intset (
+   internallength = VARIABLE,
+   input = intset_in,
+   output = intset_out,
+);
+
+
+--
+-- test
+
+CREATE TABLE test_intset (
+	a	intset
+);
+
+INSERT INTO test_intset VALUES ('{1,2}');
+INSERT INTO test_intset VALUES ('{1,2,3}');
+
+SELECT * FROM test_intset;
+
+-- clean up the example
+DROP TABLE test_intset;
+DROP TYPE intset CASCADE;
