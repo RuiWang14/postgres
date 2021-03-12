@@ -70,9 +70,10 @@ int add(IntSetInternal *list, int val)
 
         // copy data
 		memcpy(newArray, oldArray, sizeof(int) * list->len);
-
         list->data = newArray;
         list->size *= 2;
+		
+		pfree(oldArray);
     }
 	list->data[list->len] = val;
 	list->len++;
@@ -150,6 +151,9 @@ IntSet *newIntSetFromString(char *input) {
     IntSet *set = newIntSet(list->len);
     memcpy(set->data, list->data, sizeof(int) * list->len);
 
+	pfree(list->data);
+	pfree(list);
+
     return set;
 }
 
@@ -158,7 +162,7 @@ char *toString(IntSet *intSet) {
         return "{}";
     }
 
-    char *str = malloc(sizeof(char) * ((intSet->size) * 2 + 2));
+    char *str = palloc(sizeof(char) * ((intSet->size) * 2 + 2));
     char *p = str;
     *p++ = '{';
     for (int i = 0; ;) {
