@@ -44,3 +44,5 @@ lib*.pc
 /tmp_install/
 
 .vscode
+src/tutorial/*.sql
+local default.session.sql
