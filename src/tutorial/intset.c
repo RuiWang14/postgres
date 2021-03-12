@@ -11,6 +11,7 @@
 
 #include "fmgr.h"
 #include "libpq/pqformat.h" /* needed for send/recv functions */
+#include <string.h>
 
 PG_MODULE_MAGIC;
 
@@ -71,6 +72,7 @@ int add(IntSetInternal *list, int val)
         for (int i = 0; i < list->size; i++) {
             newArray[i] = oldArray[i];
         }
+		memcpy(newArray, oldArray, sizeof(int) * list->len);
 
         list->data = newArray;
         list->size *= 2;
@@ -149,9 +151,7 @@ IntSet *newIntSetFromString(char *input) {
     }
 
     IntSet *set = newIntSet(list->len);
-    for (int i = 0; i < list->len; i++) {
-        set->data[i] = list->data[i];
-    }
+    memcpy(set->data, list->data, sizeof(int) * list->len);
 
     return set;
 }
