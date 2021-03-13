@@ -107,11 +107,12 @@ int convert2Number(char input) {
 IntSet *newIntSetFromString(char *input) {
 
     int leftBrace = 0;
-    int commaFlag = 0;
-    int errorInput = 0;
-    int hasNumber = 0;
+    int rightBrace = 0;
+    bool hasComma = false;
+    bool hasNumber = false;
+    enum {NoCommit, Blank, Comma,RightBrace} committer = NoCommit;
 
-    IntSetInternal *list = newIntSetInternal(4);
+    IntSetInternal *list = newIntSetInternal(32);
 
     int number = 0;
     for (char *ch = input; *ch != '\0'; ch++) {
@@ -121,30 +122,48 @@ IntSet *newIntSetFromString(char *input) {
                 break;
             }
             case '}': {
+                rightBrace++;
+                if (rightBrace > 1) {
+                    ereport(ERROR,
+							(errcode(ERRCODE_DATATYPE_MISMATCH),
+							errmsg("error input: too many rightBrace")));
+                }
                 if (leftBrace != 1) {
                     ereport(ERROR,
 							(errcode(ERRCODE_DATATYPE_MISMATCH),
-							errmsg("error data format")));
-					return NULL;
+							errmsg("error input: wrong leftBrace")));
                 }
-                if(hasNumber > 0) {
+                if(hasNumber == true) {
                     add(list, number);
+                    hasNumber = false;
                     number = 0;
+                    committer = RightBrace;
                 }
                 break;
             }
-            case ' ':
-                break;
-            case ',': {
-                if (commaFlag > 0) {
-                    ereport(ERROR,
-							(errcode(ERRCODE_DATATYPE_MISMATCH),
-							errmsg("error data format")));
-					return NULL;
+            case ' ':{
+                if(hasNumber == true){
+                    add(list, number);
+                    hasNumber = false;
+                    number = 0;
+                    committer = Blank;
                 }
-                add(list, number);
-                commaFlag = 1;
-                number = 0;
+                break;
+            }
+
+            case ',': {
+                if (hasComma == true) {
+                   	ereport(ERROR,
+							(errcode(ERRCODE_DATATYPE_MISMATCH),
+							errmsg("error input: have ,,")));
+                }
+                if (hasNumber == true) {
+                    add(list, number);
+                    hasNumber = false;
+                    number = 0;
+                    committer = Comma;
+                }
+                hasComma = true;
                 break;
             }
             default: {
@@ -152,29 +171,33 @@ IntSet *newIntSetFromString(char *input) {
                 if (num < 0) {
                     ereport(ERROR,
 							(errcode(ERRCODE_DATATYPE_MISMATCH),
-							errmsg("error data format")));
-					return NULL;
+							errmsg("error input: wrong letter")));
                 } else {
-                    hasNumber = 1;
+                    hasNumber = true;
                     number = number * 10 + num;
-					if (number < 0){
+                    if (number < 0){
                         ereport(ERROR,
 								(errcode(ERRCODE_DATATYPE_MISMATCH),
-								errmsg("error data format")));
-						return NULL;
+								errmsg("error input: number too large, overflow")));
                     }
-                    commaFlag = 0;
+                    if(committer != NoCommit){
+                        if (committer != Comma && hasComma == false){
+                            ereport(ERROR,
+								(errcode(ERRCODE_DATATYPE_MISMATCH),
+								errmsg(psprintf("error input: %s\n", input))));
+                        }
+                    }
+                    hasComma = false;
                 }
                 break;
             }
         }
     }
 
-    if (errorInput > 0 || commaFlag > 0) {
+    if (hasComma == true || rightBrace != 1 ) {
         ereport(ERROR,
 				(errcode(ERRCODE_DATATYPE_MISMATCH),
-				 errmsg("error data format")));
-        return NULL;
+				 errmsg("error input: end with comma or wrong rightBrace")));
     }
 
     IntSet *set = newIntSet(list->len);
