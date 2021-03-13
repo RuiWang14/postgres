@@ -264,8 +264,8 @@ char *toString(IntSet *intSet)
 				 errmsg("error palloc str")));
 	}
 	str = psprintf("\0");
+
 	char *number = palloc(sizeof(char) * (strlen("2147483647") + strlen("\0")));
-	;
 	if (number == NULL)
 	{
 		ereport(ERROR,
@@ -278,7 +278,7 @@ char *toString(IntSet *intSet)
 		char *temp;
 		if (strlen(str) == 0)
 		{
-			temp = palloc(sizeof(char) * (strlen(number) + strlen("\0")));
+			temp = palloc(sizeof(char) * (strlen(number) + 1));
 			if (temp == NULL)
 			{
 				ereport(ERROR,
@@ -289,7 +289,7 @@ char *toString(IntSet *intSet)
 		}
 		else
 		{
-			temp = palloc(sizeof(char) * (strlen(str) + strlen(",") + strlen(number) + strlen("\0")));
+			temp = palloc(sizeof(char) * (strlen(str) + strlen(",") + strlen(number) + 1));
 			if (temp == NULL)
 			{
 				ereport(ERROR,
