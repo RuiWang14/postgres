@@ -24,6 +24,15 @@ CREATE FUNCTION intset_ein(integer, intset)
 CREATE OPERATOR ? (
    leftarg = integer, rightarg = intset, procedure = intset_ein,
 );
+
+CREATE FUNCTION intset_card(intset)
+   RETURNS integer
+   AS '_OBJWD_/intset'
+   LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR # (
+   rightarg = intset, procedure = intset_card,
+);
         
 --
 -- test

@@ -339,8 +339,6 @@ Datum
 	PG_RETURN_CSTRING(result);
 }
 
-
-
 /*****************************************************************************
  * New Operators
  * 
@@ -356,14 +354,29 @@ PG_FUNCTION_INFO_V1(intset_ein);
 Datum
 	intset_ein(PG_FUNCTION_ARGS)
 {
-	int32 a = PG_GETARG_INT32(0);
-	IntSet *b = (IntSet *)PG_GETARG_POINTER(1);
+	int32 num = PG_GETARG_INT32(0);
+	IntSet *set = (IntSet *)PG_GETARG_POINTER(1);
 
-	for (int i = 0; i < b->size; i++)
+	for (int i = 0; i < set->size; i++)
 	{
-		if(a == b->data[i]){
+		if (num == set->data[i])
+		{
 			PG_RETURN_BOOL(true);
 		}
 	}
 	PG_RETURN_BOOL(false);
+}
+
+/*
+ * cardinality
+ * |{1,2}| -> 2
+ */
+
+PG_FUNCTION_INFO_V1(intset_card);
+
+Datum
+	intset_card(PG_FUNCTION_ARGS)
+{
+	IntSet *set = (IntSet *)PG_GETARG_POINTER(0);
+	PG_RETURN_INT32(set->size);
 }
