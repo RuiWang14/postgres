@@ -31,6 +31,11 @@ typedef struct {
 IntSet *newIntSet(int size)
 {
 	IntSet *new = (IntSet *)palloc(VARHDRSZ + sizeof(int32) * (size + 1));
+	if (new == NULL){
+		ereport(ERROR,
+			(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
+				errmsg("error palloc newIntSet new")));
+	}
 	SET_VARSIZE(new, VARHDRSZ + sizeof(int32) * (size + 1));
 	new->size = size;
 	return new;
@@ -40,14 +45,17 @@ IntSetInternal *newIntSetInternal(int size) {
 
     IntSetInternal *new = (IntSetInternal *)palloc(sizeof(IntSetInternal));
     if (new == NULL) {
-        perror("new IntSetInternal");
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
+				 errmsg("error palloc newIntSetInternal")));
         return NULL;
     }
 
     new->data = (int32 *) palloc(size * sizeof(int32));
     if (new->data == NULL) {
-        perror("new IntSetInternal data");
-        pfree(new);
+       ereport(ERROR,
+				(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
+				 errmsg("error palloc newIntSetInternal->data")));
         return NULL;
     }
 
@@ -64,7 +72,9 @@ int add(IntSetInternal *list, int val)
 
         int *newArray = (int *) palloc(list->size * 2 * sizeof(int32));
         if (newArray == NULL) {
-            perror("double number list size");
+            ereport(ERROR,
+				(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
+				 errmsg("error palloc double size array")));
             return -1;
         }
 
@@ -80,7 +90,6 @@ int add(IntSetInternal *list, int val)
             return 0;
         }
     }
-	
 	list->data[list->len] = val;
 	list->len++;
 	return 0;
@@ -154,7 +163,9 @@ IntSet *newIntSetFromString(char *input) {
     }
 
     if (errorInput > 0 || commaFlag > 0) {
-        printf("error input\n");
+        ereport(ERROR,
+				(errcode(ERRCODE_DATATYPE_MISMATCH),
+				 errmsg("error data format")));
         return NULL;
     }
 
@@ -173,22 +184,47 @@ char *toString(IntSet *intSet) {
     }
 
     char *str = palloc(sizeof(char) * (strlen("\0")));
+	if (str == NULL){
+		ereport(ERROR,
+			(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
+				errmsg("error palloc str")));
+	}
     sprintf(str, "\0");
     char *number = palloc(sizeof(char) * (strlen("2147483647") + strlen("\0")));;
+	if (number == NULL){
+		ereport(ERROR,
+			(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
+				errmsg("error palloc string number")));
+	}
     for (int i = 0; i < intSet->size; i++) {
         sprintf(number, "%d", intSet->data[i]);
         char *temp;
         if (strlen(str) == 0) {
             temp = palloc(sizeof(char) * (strlen(number) + strlen("\0")));
+			if (temp == NULL){
+				ereport(ERROR,
+					(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
+						errmsg("error palloc string temp")));
+			}
             strcpy(temp,  number);
         } else {
             temp = palloc(sizeof(char) * (strlen(str) + strlen(",") + strlen(number) + strlen("\0")));
+			if (temp == NULL){
+				ereport(ERROR,
+					(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
+						errmsg("error palloc string temp")));
+			}
             sprintf(temp, "%s,%s", str, number);
         }
         pfree(str);
         str = temp;
     }
     char *result = palloc(sizeof(char) * (strlen("{}") + strlen(str)+ strlen("\0")));
+	if (result == NULL){
+		ereport(ERROR,
+			(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
+				errmsg("error palloc string result")));
+	}
     sprintf(result, "{%s}", str);
     pfree(str);
     pfree(number);
