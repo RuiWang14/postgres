@@ -96,6 +96,16 @@ CREATE OPERATOR || (
    leftarg = intset, rightarg = intset, procedure = intset_union
 );
 
+-- xor
+CREATE FUNCTION intset_xor(intset, intset)
+   RETURNS intset
+   AS '_OBJWD_/intset'
+   LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR !! (
+   leftarg = intset, rightarg = intset, procedure = intset_xor
+);
+
         
 --
 -- test
