@@ -457,3 +457,21 @@ Datum
 
 	PG_RETURN_BOOL(AContainB && BContainA);
 }
+
+/*
+ * not equal
+ * A <> B 
+ */
+PG_FUNCTION_INFO_V1(intset_notequal);
+
+Datum
+	intset_notequal(PG_FUNCTION_ARGS)
+{
+	IntSet *setA = (IntSet *)PG_GETARG_POINTER(0);
+	IntSet *setB = (IntSet *)PG_GETARG_POINTER(1);
+
+	bool AContainB = contain(setA, setB);
+	bool BContainA = contain(setB, setA);
+
+	PG_RETURN_BOOL(!(AContainB && BContainA));
+}
