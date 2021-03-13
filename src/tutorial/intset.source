@@ -86,6 +86,16 @@ CREATE OPERATOR && (
    leftarg = intset, rightarg = intset, procedure = intset_intersection
 );
 
+-- union
+CREATE FUNCTION intset_union(intset, intset)
+   RETURNS intset
+   AS '_OBJWD_/intset'
+   LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR || (
+   leftarg = intset, rightarg = intset, procedure = intset_union
+);
+
         
 --
 -- test
