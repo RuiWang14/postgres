@@ -22,245 +22,297 @@ typedef struct
 	int32 data[FLEXIBLE_ARRAY_MEMBER];
 } IntSet;
 
-typedef struct {
-    int size;
-    int len;
-    int *data;
+typedef struct
+{
+	int size;
+	int len;
+	int *data;
 } IntSetInternal;
 
 IntSet *newIntSet(int size)
 {
 	IntSet *new = (IntSet *)palloc(VARHDRSZ + sizeof(int32) * (size + 1));
-	if (new == NULL){
+	if (new == NULL)
+	{
 		ereport(ERROR,
-			(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
-				errmsg("error palloc newIntSet new")));
+				(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
+				 errmsg("error palloc newIntSet new")));
 	}
 	SET_VARSIZE(new, VARHDRSZ + sizeof(int32) * (size + 1));
 	new->size = size;
 	return new;
 }
 
-IntSetInternal *newIntSetInternal(int size) {
+IntSetInternal *newIntSetInternal(int size)
+{
 
-    IntSetInternal *new = (IntSetInternal *)palloc(sizeof(IntSetInternal));
-    if (new == NULL) {
+	IntSetInternal *new = (IntSetInternal *)palloc(sizeof(IntSetInternal));
+	if (new == NULL)
+	{
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
 				 errmsg("error palloc newIntSetInternal")));
-        return NULL;
-    }
+		return NULL;
+	}
 
-    new->data = (int32 *) palloc(size * sizeof(int32));
-    if (new->data == NULL) {
-       ereport(ERROR,
+	new->data = (int32 *)palloc(size * sizeof(int32));
+	if (new->data == NULL)
+	{
+		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
 				 errmsg("error palloc newIntSetInternal->data")));
-        return NULL;
-    }
+		return NULL;
+	}
 
-    new->size = size;
-    new->len = 0;
-    return new;
+	new->size = size;
+	new->len = 0;
+	return new;
 }
 
 int add(IntSetInternal *list, int val)
 {
 	// double array size
-    if (list->len >= list->size) {
-        int *oldArray = list->data;
+	if (list->len >= list->size)
+	{
+		int *oldArray = list->data;
 
-        int *newArray = (int *) palloc(list->size * 2 * sizeof(int32));
-        if (newArray == NULL) {
-            ereport(ERROR,
-				(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
-				 errmsg("error palloc double size array")));
-            return -1;
-        }
+		int *newArray = (int *)palloc(list->size * 2 * sizeof(int32));
+		if (newArray == NULL)
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
+					 errmsg("error palloc double size array")));
+			return -1;
+		}
 
-        // copy data
+		// copy data
 		memcpy(newArray, oldArray, sizeof(int) * list->len);
-        list->data = newArray;
-        list->size *= 2;
-		
+		list->data = newArray;
+		list->size *= 2;
+
 		pfree(oldArray);
-    }
-	for (int i = 0; i < list->len; i++) {
-        if (list->data[i] == val) {
-            return 0;
-        }
-    }
+	}
+	for (int i = 0; i < list->len; i++)
+	{
+		if (list->data[i] == val)
+		{
+			return 0;
+		}
+	}
 	list->data[list->len] = val;
 	list->len++;
 	return 0;
 }
 
-int convert2Number(char input) {
-    int num = input - '0';
-    if (num < 0 || num > 9) {
-        return -1;
-    } else {
-        return num;
-    }
+int convert2Number(char input)
+{
+	int num = input - '0';
+	if (num < 0 || num > 9)
+	{
+		return -1;
+	}
+	else
+	{
+		return num;
+	}
 }
 
-IntSet *newIntSetFromString(char *input) {
+IntSet *newIntSetFromString(char *input)
+{
 
-    int leftBrace = 0;
-    int rightBrace = 0;
-    bool hasComma = false;
-    bool hasNumber = false;
-    enum {NoCommit, Blank, Comma,RightBrace} committer = NoCommit;
+	int leftBrace = 0;
+	int rightBrace = 0;
+	bool hasComma = false;
+	bool hasNumber = false;
+	enum
+	{
+		NoCommit,
+		Blank,
+		Comma,
+		RightBrace
+	} committer = NoCommit;
 
-    IntSetInternal *list = newIntSetInternal(32);
+	IntSetInternal *list = newIntSetInternal(32);
 
-    int number = 0;
-    for (char *ch = input; *ch != '\0'; ch++) {
-        switch (*ch) {
-            case '{': {
-                leftBrace++;
-                break;
-            }
-            case '}': {
-                rightBrace++;
-                if (rightBrace > 1) {
-                    ereport(ERROR,
-							(errcode(ERRCODE_DATATYPE_MISMATCH),
-							errmsg("error input: too many rightBrace")));
-                }
-                if (leftBrace != 1) {
-                    ereport(ERROR,
-							(errcode(ERRCODE_DATATYPE_MISMATCH),
-							errmsg("error input: wrong leftBrace")));
-                }
-                if(hasNumber == true) {
-                    add(list, number);
-                    hasNumber = false;
-                    number = 0;
-                    committer = RightBrace;
-                }
-                break;
-            }
-            case ' ':{
-                if(hasNumber == true){
-                    add(list, number);
-                    hasNumber = false;
-                    number = 0;
-                    committer = Blank;
-                }
-                break;
-            }
+	int number = 0;
+	for (char *ch = input; *ch != '\0'; ch++)
+	{
+		switch (*ch)
+		{
+		case '{':
+		{
+			leftBrace++;
+			break;
+		}
+		case '}':
+		{
+			rightBrace++;
+			if (rightBrace > 1)
+			{
+				ereport(ERROR,
+						(errcode(ERRCODE_DATATYPE_MISMATCH),
+						 errmsg("error input: too many rightBrace")));
+			}
+			if (leftBrace != 1)
+			{
+				ereport(ERROR,
+						(errcode(ERRCODE_DATATYPE_MISMATCH),
+						 errmsg("error input: wrong leftBrace")));
+			}
+			if (hasNumber == true)
+			{
+				add(list, number);
+				hasNumber = false;
+				number = 0;
+				committer = RightBrace;
+			}
+			break;
+		}
+		case ' ':
+		{
+			if (hasNumber == true)
+			{
+				add(list, number);
+				hasNumber = false;
+				number = 0;
+				committer = Blank;
+			}
+			break;
+		}
 
-            case ',': {
-                if (hasComma == true) {
-                   	ereport(ERROR,
+		case ',':
+		{
+			if (hasComma == true)
+			{
+				ereport(ERROR,
+						(errcode(ERRCODE_DATATYPE_MISMATCH),
+						 errmsg("error input: have ,,")));
+			}
+			if (hasNumber == true)
+			{
+				add(list, number);
+				hasNumber = false;
+				number = 0;
+				committer = Comma;
+			}
+			hasComma = true;
+			break;
+		}
+		default:
+		{
+			int num = convert2Number(*ch);
+			if (num < 0)
+			{
+				ereport(ERROR,
+						(errcode(ERRCODE_DATATYPE_MISMATCH),
+						 errmsg("error input: wrong letter")));
+			}
+			else
+			{
+				hasNumber = true;
+				number = number * 10 + num;
+				if (number < 0)
+				{
+					ereport(ERROR,
 							(errcode(ERRCODE_DATATYPE_MISMATCH),
-							errmsg("error input: have ,,")));
-                }
-                if (hasNumber == true) {
-                    add(list, number);
-                    hasNumber = false;
-                    number = 0;
-                    committer = Comma;
-                }
-                hasComma = true;
-                break;
-            }
-            default: {
-                int num = convert2Number(*ch);
-                if (num < 0) {
-                    ereport(ERROR,
-							(errcode(ERRCODE_DATATYPE_MISMATCH),
-							errmsg("error input: wrong letter")));
-                } else {
-                    hasNumber = true;
-                    number = number * 10 + num;
-                    if (number < 0){
-                        ereport(ERROR,
+							 errmsg("error input: number too large, overflow")));
+				}
+				if (committer != NoCommit)
+				{
+					if (committer != Comma && hasComma == false)
+					{
+						ereport(ERROR,
 								(errcode(ERRCODE_DATATYPE_MISMATCH),
-								errmsg("error input: number too large, overflow")));
-                    }
-                    if(committer != NoCommit){
-                        if (committer != Comma && hasComma == false){
-                            ereport(ERROR,
-								(errcode(ERRCODE_DATATYPE_MISMATCH),
-								errmsg(psprintf("error input: %s\n", input))));
-                        }
-                    }
-                    hasComma = false;
-                }
-                break;
-            }
-        }
-    }
+								 errmsg(psprintf("error input: %s\n", input))));
+					}
+				}
+				hasComma = false;
+			}
+			break;
+		}
+		}
+	}
 
-    if (hasComma == true || rightBrace != 1 ) {
-        ereport(ERROR,
+	if (hasComma == true || rightBrace != 1)
+	{
+		ereport(ERROR,
 				(errcode(ERRCODE_DATATYPE_MISMATCH),
 				 errmsg("error input: end with comma or wrong rightBrace")));
-    }
+	}
 
-    IntSet *set = newIntSet(list->len);
-    memcpy(set->data, list->data, sizeof(int) * list->len);
+	IntSet *set = newIntSet(list->len);
+	memcpy(set->data, list->data, sizeof(int) * list->len);
 
 	pfree(list->data);
 	pfree(list);
 
-    return set;
+	return set;
 }
 
-char *toString(IntSet *intSet) {
-    if (intSet == NULL || intSet->size <= 0) {
-        return "{}";
-    }
+char *toString(IntSet *intSet)
+{
+	if (intSet == NULL || intSet->size <= 0)
+	{
+		return "{}";
+	}
 
-    char *str = palloc(sizeof(char) * (strlen("\0")));
-	if (str == NULL){
+	char *str = palloc(sizeof(char) * (strlen("\0")));
+	if (str == NULL)
+	{
 		ereport(ERROR,
-			(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
-				errmsg("error palloc str")));
+				(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
+				 errmsg("error palloc str")));
 	}
-    str = psprintf("\0");
-    char *number = palloc(sizeof(char) * (strlen("2147483647") + strlen("\0")));;
-	if (number == NULL){
+	str = psprintf("\0");
+	char *number = palloc(sizeof(char) * (strlen("2147483647") + strlen("\0")));
+	;
+	if (number == NULL)
+	{
 		ereport(ERROR,
-			(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
-				errmsg("error palloc string number")));
+				(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
+				 errmsg("error palloc string number")));
 	}
-    for (int i = 0; i < intSet->size; i++) {
-        number = psprintf("%d", intSet->data[i]);
-        char *temp;
-        if (strlen(str) == 0) {
-            temp = palloc(sizeof(char) * (strlen(number) + strlen("\0")));
-			if (temp == NULL){
+	for (int i = 0; i < intSet->size; i++)
+	{
+		number = psprintf("%d", intSet->data[i]);
+		char *temp;
+		if (strlen(str) == 0)
+		{
+			temp = palloc(sizeof(char) * (strlen(number) + strlen("\0")));
+			if (temp == NULL)
+			{
 				ereport(ERROR,
-					(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
-						errmsg("error palloc string temp")));
+						(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
+						 errmsg("error palloc string temp")));
 			}
-            temp = psprintf("%s", number);
-        } else {
-            temp = palloc(sizeof(char) * (strlen(str) + strlen(",") + strlen(number) + strlen("\0")));
-			if (temp == NULL){
+			temp = psprintf("%s", number);
+		}
+		else
+		{
+			temp = palloc(sizeof(char) * (strlen(str) + strlen(",") + strlen(number) + strlen("\0")));
+			if (temp == NULL)
+			{
 				ereport(ERROR,
-					(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
-						errmsg("error palloc string temp")));
+						(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
+						 errmsg("error palloc string temp")));
 			}
-            temp = psprintf("%s,%s", str, number);
-        }
-        pfree(str);
-        str = temp;
-    }
-    char *result = palloc(sizeof(char) * (strlen("{}") + strlen(str)+ strlen("\0")));
-	if (result == NULL){
-		ereport(ERROR,
-			(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
-				errmsg("error palloc string result")));
+			temp = psprintf("%s,%s", str, number);
+		}
+		pfree(str);
+		str = temp;
 	}
-    result = psprintf("{%s}", str);
-    pfree(str);
-    pfree(number);
+	char *result = palloc(sizeof(char) * (strlen("{}") + strlen(str) + strlen("\0")));
+	if (result == NULL)
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
+				 errmsg("error palloc string result")));
+	}
+	result = psprintf("{%s}", str);
+	pfree(str);
+	pfree(number);
 
-    return result;
+	return result;
 }
 
 /*****************************************************************************
