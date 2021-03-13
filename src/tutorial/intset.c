@@ -609,3 +609,44 @@ Datum
 
 	PG_RETURN_POINTER(set);
 }
+
+/*
+ * difference
+ * A - B 
+ */
+PG_FUNCTION_INFO_V1(intset_diff);
+
+Datum
+	intset_diff(PG_FUNCTION_ARGS)
+{
+	IntSet *setA = (IntSet *)PG_GETARG_POINTER(0);
+	IntSet *setB = (IntSet *)PG_GETARG_POINTER(1);
+
+	int maxSize = setA->size;
+
+	int *list = palloc(sizeof(int32) * maxSize);
+	int len = 0;
+
+	for (int i = 0; i < setA->size; i++)
+	{
+		bool find = false;
+		for (int j = 0; j < setB->size; j++)
+		{
+			if (setA->data[i] == setB->data[j])
+			{
+				find = true;
+				break;
+			}
+		}
+		if (find == false)
+		{
+			list[len++] = setA->data[i];
+		}
+	}
+
+	IntSet *set = newIntSet(len);
+	memcpy(set->data, list, sizeof(int32) * len);
+	pfree(list);
+
+	PG_RETURN_POINTER(set);
+}

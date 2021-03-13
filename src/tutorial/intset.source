@@ -106,6 +106,15 @@ CREATE OPERATOR !! (
    leftarg = intset, rightarg = intset, procedure = intset_xor
 );
 
+-- difference
+CREATE FUNCTION intset_diff(intset, intset)
+   RETURNS intset
+   AS '_OBJWD_/intset'
+   LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR - (
+   leftarg = intset, rightarg = intset, procedure = intset_diff
+);
         
 --
 -- test
