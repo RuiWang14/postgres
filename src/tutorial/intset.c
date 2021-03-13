@@ -197,7 +197,7 @@ char *toString(IntSet *intSet) {
 			(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
 				errmsg("error palloc str")));
 	}
-    sprintf(str, "\0");
+    str = psprintf("\0");
     char *number = palloc(sizeof(char) * (strlen("2147483647") + strlen("\0")));;
 	if (number == NULL){
 		ereport(ERROR,
@@ -205,7 +205,7 @@ char *toString(IntSet *intSet) {
 				errmsg("error palloc string number")));
 	}
     for (int i = 0; i < intSet->size; i++) {
-        sprintf(number, "%d", intSet->data[i]);
+        number = psprintf("%d", intSet->data[i]);
         char *temp;
         if (strlen(str) == 0) {
             temp = palloc(sizeof(char) * (strlen(number) + strlen("\0")));
@@ -214,7 +214,7 @@ char *toString(IntSet *intSet) {
 					(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
 						errmsg("error palloc string temp")));
 			}
-            strcpy(temp,  number);
+            temp = psprintf("%s", number);
         } else {
             temp = palloc(sizeof(char) * (strlen(str) + strlen(",") + strlen(number) + strlen("\0")));
 			if (temp == NULL){
@@ -222,7 +222,7 @@ char *toString(IntSet *intSet) {
 					(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
 						errmsg("error palloc string temp")));
 			}
-            sprintf(temp, "%s,%s", str, number);
+            temp = psprintf("%s,%s", str, number);
         }
         pfree(str);
         str = temp;
@@ -233,7 +233,7 @@ char *toString(IntSet *intSet) {
 			(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
 				errmsg("error palloc string result")));
 	}
-    sprintf(result, "{%s}", str);
+    result = psprintf("{%s}", str);
     pfree(str);
     pfree(number);
 
