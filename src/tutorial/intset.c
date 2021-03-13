@@ -1,12 +1,3 @@
-/*
- * src/tutorial/complex.c
- *
- ******************************************************************************
-  This file contains routines that can be bound to a Postgres backend and
-  called by the backend in the process of processing queries.  The calling
-  format for these routines is dictated by Postgres architecture.
-******************************************************************************/
-
 #include "postgres.h"
 
 #include "fmgr.h"
