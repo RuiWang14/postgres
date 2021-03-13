@@ -29,6 +29,16 @@ typedef struct
 	int *data;
 } IntSetInternal;
 
+IntSet *newIntSet(int size);
+IntSetInternal *newIntSetInternal(int size);
+int add(IntSetInternal *list, int val);
+int convert2Number(char input);
+IntSet *newIntSetFromString(char *input);
+char *toString(IntSet *intSet);
+bool contain(IntSet *setA, IntSet *setB);
+int partition(int *arr, int low, int high);
+void quick_sort(int *arr, int start, int end);
+
 IntSet *newIntSet(int size)
 {
 	IntSet *new = (IntSet *)palloc(VARHDRSZ + sizeof(int32) * (size + 1));
@@ -124,6 +134,9 @@ IntSet *newIntSetFromString(char *input)
 	int rightBrace = 0;
 	bool hasComma = false;
 	bool hasNumber = false;
+	int num;
+	IntSet *set;
+
 	enum
 	{
 		NoCommit,
@@ -151,13 +164,13 @@ IntSet *newIntSetFromString(char *input)
 			{
 				ereport(ERROR,
 						(errcode(ERRCODE_DATATYPE_MISMATCH),
-						 errmsg("error input: too many rightBrace")));
+						 errmsg("invalid intset syntax: too many rightBrace")));
 			}
 			if (leftBrace != 1)
 			{
 				ereport(ERROR,
 						(errcode(ERRCODE_DATATYPE_MISMATCH),
-						 errmsg("error input: wrong leftBrace")));
+						 errmsg("invalid intset syntax: wrong leftBrace")));
 			}
 			if (hasNumber == true)
 			{
@@ -186,7 +199,7 @@ IntSet *newIntSetFromString(char *input)
 			{
 				ereport(ERROR,
 						(errcode(ERRCODE_DATATYPE_MISMATCH),
-						 errmsg("error input: have ,,")));
+						 errmsg("invalid intset syntax: have ,,")));
 			}
 			if (hasNumber == true)
 			{
@@ -200,12 +213,12 @@ IntSet *newIntSetFromString(char *input)
 		}
 		default:
 		{
-			int num = convert2Number(*ch);
+			num = convert2Number(*ch);
 			if (num < 0)
 			{
 				ereport(ERROR,
 						(errcode(ERRCODE_DATATYPE_MISMATCH),
-						 errmsg("error input: wrong letter")));
+						 errmsg("invalid intset syntax: wrong letter")));
 			}
 			else
 			{
@@ -215,15 +228,15 @@ IntSet *newIntSetFromString(char *input)
 				{
 					ereport(ERROR,
 							(errcode(ERRCODE_DATATYPE_MISMATCH),
-							 errmsg("error input: number too large, overflow")));
+							 errmsg("invalid intset syntax: number too large, overflow")));
 				}
 				if (committer != NoCommit)
 				{
 					if (committer != Comma && hasComma == false)
 					{
 						ereport(ERROR,
-								(errcode(ERRCODE_DATATYPE_MISMATCH),
-								 errmsg(psprintf("error input: %s\n", input))));
+								(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+								 errmsg("invalid intset syntax")));
 					}
 				}
 				hasComma = false;
@@ -237,10 +250,10 @@ IntSet *newIntSetFromString(char *input)
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_DATATYPE_MISMATCH),
-				 errmsg("error input: end with comma or wrong rightBrace")));
+				 errmsg("invalid intset syntax: end with comma or wrong rightBrace")));
 	}
 
-	IntSet *set = newIntSet(list->len);
+	set = newIntSet(list->len);
 	memcpy(set->data, list->data, sizeof(int) * list->len);
 
 	pfree(list->data);
@@ -251,21 +264,25 @@ IntSet *newIntSetFromString(char *input)
 
 char *toString(IntSet *intSet)
 {
+	char *str;
+	char *number;
+	char *temp;
+	char *result;
+
 	if (intSet == NULL || intSet->size <= 0)
 	{
 		return "{}";
 	}
 
-	char *str = palloc(sizeof(char) * (strlen("\0")));
+	str = "";
 	if (str == NULL)
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_TRANSACTION_STATE),
 				 errmsg("error palloc str")));
 	}
-	str = psprintf("\0");
 
-	char *number = palloc(sizeof(char) * (strlen("2147483647") + strlen("\0")));
+	number = palloc(sizeof(char) * (strlen("2147483647") + strlen("\0")));
 	if (number == NULL)
 	{
 		ereport(ERROR,
@@ -275,7 +292,6 @@ char *toString(IntSet *intSet)
 	for (int i = 0; i < intSet->size; i++)
 	{
 		number = psprintf("%d", intSet->data[i]);
-		char *temp;
 		if (strlen(str) == 0)
 		{
 			temp = palloc(sizeof(char) * (strlen(number) + 1));
@@ -298,10 +314,10 @@ char *toString(IntSet *intSet)
 			}
 			temp = psprintf("%s,%s", str, number);
 		}
-		pfree(str);
 		str = temp;
 	}
-	char *result = palloc(sizeof(char) * (strlen("{}") + strlen(str) + strlen("\0")));
+
+	result = palloc(sizeof(char) * (strlen("{}") + strlen(str) + strlen("\0")));
 	if (result == NULL)
 	{
 		ereport(ERROR,
@@ -379,7 +395,7 @@ Datum
 {
 	char *str = PG_GETARG_CSTRING(0);
 	IntSet *result = newIntSetFromString(str);
-	quick_sort(result->data,0,result->size-1);
+	quick_sort(result->data, 0, result->size - 1);
 	PG_RETURN_POINTER(result);
 }
 
@@ -516,6 +532,7 @@ PG_FUNCTION_INFO_V1(intset_intersection);
 Datum
 	intset_intersection(PG_FUNCTION_ARGS)
 {
+	IntSet *set;
 	IntSet *setA = (IntSet *)PG_GETARG_POINTER(0);
 	IntSet *setB = (IntSet *)PG_GETARG_POINTER(1);
 
@@ -535,11 +552,11 @@ Datum
 		}
 	}
 
-	IntSet *set = newIntSet(size);
+	set = newIntSet(size);
 	memcpy(set->data, list, sizeof(int) * size);
 	pfree(list);
 
-	quick_sort(set->data,0,set->size-1);
+	quick_sort(set->data, 0, set->size - 1);
 
 	PG_RETURN_POINTER(set);
 }
@@ -553,6 +570,8 @@ PG_FUNCTION_INFO_V1(intset_union);
 Datum
 	intset_union(PG_FUNCTION_ARGS)
 {
+	IntSet *set;
+	int len;
 	IntSet *setA = (IntSet *)PG_GETARG_POINTER(0);
 	IntSet *setB = (IntSet *)PG_GETARG_POINTER(1);
 
@@ -560,7 +579,7 @@ Datum
 
 	int *list = palloc(sizeof(int32) * maxSize);
 	memcpy(list, setB->data, sizeof(int32) * setB->size);
-	int len = setB->size;
+	len = setB->size;
 
 	for (int i = 0; i < setA->size; i++)
 	{
@@ -579,11 +598,11 @@ Datum
 		}
 	}
 
-	IntSet *set = newIntSet(len);
+	set = newIntSet(len);
 	memcpy(set->data, list, sizeof(int32) * len);
 	pfree(list);
 
-	quick_sort(set->data,0,set->size-1);
+	quick_sort(set->data, 0, set->size - 1);
 
 	PG_RETURN_POINTER(set);
 }
@@ -597,6 +616,7 @@ PG_FUNCTION_INFO_V1(intset_xor);
 Datum
 	intset_xor(PG_FUNCTION_ARGS)
 {
+	IntSet *set;
 	IntSet *setA = (IntSet *)PG_GETARG_POINTER(0);
 	IntSet *setB = (IntSet *)PG_GETARG_POINTER(1);
 
@@ -639,11 +659,11 @@ Datum
 		}
 	}
 
-	IntSet *set = newIntSet(len);
+	set = newIntSet(len);
 	memcpy(set->data, list, sizeof(int32) * len);
 	pfree(list);
 
-	quick_sort(set->data,0,set->size-1);
+	quick_sort(set->data, 0, set->size - 1);
 
 	PG_RETURN_POINTER(set);
 }
@@ -657,6 +677,7 @@ PG_FUNCTION_INFO_V1(intset_diff);
 Datum
 	intset_diff(PG_FUNCTION_ARGS)
 {
+	IntSet *set;
 	IntSet *setA = (IntSet *)PG_GETARG_POINTER(0);
 	IntSet *setB = (IntSet *)PG_GETARG_POINTER(1);
 
@@ -682,11 +703,11 @@ Datum
 		}
 	}
 
-	IntSet *set = newIntSet(len);
+	set = newIntSet(len);
 	memcpy(set->data, list, sizeof(int32) * len);
 	pfree(list);
 
-	quick_sort(set->data,0,set->size-1);
+	quick_sort(set->data, 0, set->size - 1);
 
 	PG_RETURN_POINTER(set);
 }
