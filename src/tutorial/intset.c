@@ -475,3 +475,35 @@ Datum
 
 	PG_RETURN_BOOL(!(AContainB && BContainA));
 }
+
+/*
+ * intersection
+ * A AND B 
+ */
+PG_FUNCTION_INFO_V1(intset_intersection);
+
+Datum
+	intset_intersection(PG_FUNCTION_ARGS)
+{
+	IntSet *setA = (IntSet *)PG_GETARG_POINTER(0);
+	IntSet *setB = (IntSet *)PG_GETARG_POINTER(1);
+
+	int minSize = setA->size > setB->size ? setB->size : setA->size;
+	
+	int *list = palloc(sizeof(int32) * minSize);
+	int p = 0;
+
+	for (int i = 0; i < setA->size; i++){
+		for(int j = 0; j<setB->size; j++){
+			if(setA->data[i] == setB->data[j]){
+				list[p++] = setA->data[i];
+			}
+		}
+	}
+
+	IntSet *set = newIntSet(minSize);
+	memcpy(set->data, list, sizeof(int) * minSize);
+	pfree(list);
+
+	PG_RETURN_POINTER(set);
+}
