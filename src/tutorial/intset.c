@@ -315,6 +315,28 @@ char *toString(IntSet *intSet)
 	return result;
 }
 
+bool contain(IntSet *setA, IntSet *setB)
+{
+	for (int i = 0; i < setB->size; i++)
+	{
+		bool contain = false;
+		for (int j = 0; j < setA->size; j++)
+		{
+			if (setB->data[i] == setA->data[j])
+			{
+				contain = true;
+				break;
+			}
+		}
+		if (contain == false)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
 /*****************************************************************************
  * Input/Output functions
  *****************************************************************************/
@@ -386,7 +408,6 @@ Datum
  * A >@ B 
  * A contain B
  */
-
 PG_FUNCTION_INFO_V1(intset_contain);
 
 Datum
@@ -395,22 +416,25 @@ Datum
 	IntSet *setA = (IntSet *)PG_GETARG_POINTER(0);
 	IntSet *setB = (IntSet *)PG_GETARG_POINTER(1);
 
-	for (int i = 0; i < setB->size; i++)
-	{
-		bool contain = false;
-		for (int j = 0; j < setA->size; j++)
-		{
-			if (setB->data[i] == setA->data[j])
-			{
-				contain = true;
-				break;
-			}
-		}
-		if (contain == false)
-		{
-			PG_RETURN_BOOL(false);
-		}
-	}
+	bool result = contain(setA, setB);
 
-	PG_RETURN_BOOL(true);
+	PG_RETURN_BOOL(result);
+}
+
+/*
+ * contain
+ * A >@ B 
+ * A contain B
+ */
+PG_FUNCTION_INFO_V1(intset_subset);
+
+Datum
+	intset_subset(PG_FUNCTION_ARGS)
+{
+	IntSet *setA = (IntSet *)PG_GETARG_POINTER(0);
+	IntSet *setB = (IntSet *)PG_GETARG_POINTER(1);
+
+	bool result = contain(setB, setA);
+
+	PG_RETURN_BOOL(result);
 }
