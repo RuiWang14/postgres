@@ -47,7 +47,7 @@ IntSetInternal *newIntSetInternal(int size) {
     new->data = (int32 *) palloc(size * sizeof(int32));
     if (new->data == NULL) {
         perror("new IntSetInternal data");
-        free(new);
+        pfree(new);
         return NULL;
     }
 
@@ -75,6 +75,12 @@ int add(IntSetInternal *list, int val)
 		
 		pfree(oldArray);
     }
+	for (int i = 0; i < list->len; i++) {
+        if (list->data[i] == val) {
+            return 0;
+        }
+    }
+	
 	list->data[list->len] = val;
 	list->len++;
 	return 0;
@@ -136,6 +142,10 @@ IntSet *newIntSetFromString(char *input) {
                 } else {
                     hasNumber = 1;
                     number = number * 10 + num;
+					if (number < 0){
+                        errorInput = 1;
+                        break;
+                    }
                     commaFlag = 0;
                 }
                 break;
@@ -158,25 +168,32 @@ IntSet *newIntSetFromString(char *input) {
 }
 
 char *toString(IntSet *intSet) {
-    if(intSet == NULL || intSet -> size <= 0){
+    if (intSet == NULL || intSet->size <= 0) {
         return "{}";
     }
 
-    char *str = palloc(sizeof(char) * ((intSet->size) * 2 + 2));
-    char *p = str;
-    *p++ = '{';
-    for (int i = 0; ;) {
-        *p++ = intSet->data[i] + '0';
-        i++;
-        if (i < intSet->size){
-            *p++ = ',';
-        }else{
-            break;
+    char *str = palloc(sizeof(char) * (strlen("\0")));
+    sprintf(str, "\0");
+    char *number = palloc(sizeof(char) * (strlen("2147483647") + strlen("\0")));;
+    for (int i = 0; i < intSet->size; i++) {
+        sprintf(number, "%d", intSet->data[i]);
+        char *temp;
+        if (strlen(str) == 0) {
+            temp = palloc(sizeof(char) * (strlen(number) + strlen("\0")));
+            strcpy(temp,  number);
+        } else {
+            temp = palloc(sizeof(char) * (strlen(str) + strlen(",") + strlen(number) + strlen("\0")));
+            sprintf(temp, "%s,%s", str, number);
         }
+        pfree(str);
+        str = temp;
     }
-    *p++ = '}';
-    *p = '\0';
-    return str;
+    char *result = palloc(sizeof(char) * (strlen("{}") + strlen(str)+ strlen("\0")));
+    sprintf(result, "{%s}", str);
+    pfree(str);
+    pfree(number);
+
+    return result;
 }
 
 /*****************************************************************************
