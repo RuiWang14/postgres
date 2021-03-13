@@ -12,27 +12,40 @@ CREATE FUNCTION intset_out(intset)
 CREATE TYPE intset (
    internallength = VARIABLE,
    input = intset_in,
-   output = intset_out,
+   output = intset_out
 );
 
 -- operate functions
+-- in
 CREATE FUNCTION intset_ein(integer, intset)
    RETURNS bool
    AS '_OBJWD_/intset'
    LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR ? (
-   leftarg = integer, rightarg = intset, procedure = intset_ein,
+   leftarg = integer, rightarg = intset, procedure = intset_ein
 );
 
+-- cardinality
 CREATE FUNCTION intset_card(intset)
    RETURNS integer
    AS '_OBJWD_/intset'
    LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR # (
-   rightarg = intset, procedure = intset_card,
+   rightarg = intset, procedure = intset_card
 );
+
+-- contain
+CREATE FUNCTION intset_contain(intset, intset)
+   RETURNS bool
+   AS '_OBJWD_/intset'
+   LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR >@ (
+   leftarg = intset, rightarg = intset, procedure = intset_contain
+);
+
         
 --
 -- test

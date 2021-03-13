@@ -380,3 +380,37 @@ Datum
 	IntSet *set = (IntSet *)PG_GETARG_POINTER(0);
 	PG_RETURN_INT32(set->size);
 }
+
+/*
+ * contain
+ * A >@ B 
+ * A contain B
+ */
+
+PG_FUNCTION_INFO_V1(intset_contain);
+
+Datum
+	intset_contain(PG_FUNCTION_ARGS)
+{
+	IntSet *setA = (IntSet *)PG_GETARG_POINTER(0);
+	IntSet *setB = (IntSet *)PG_GETARG_POINTER(1);
+
+	for (int i = 0; i < setB->size; i++)
+	{
+		bool contain = false;
+		for (int j = 0; j < setA->size; j++)
+		{
+			if (setB->data[i] == setA->data[j])
+			{
+				contain = true;
+				break;
+			}
+		}
+		if (contain == false)
+		{
+			PG_RETURN_BOOL(false);
+		}
+	}
+
+	PG_RETURN_BOOL(true);
+}
