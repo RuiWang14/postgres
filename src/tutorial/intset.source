@@ -115,19 +115,3 @@ CREATE FUNCTION intset_diff(intset, intset)
 CREATE OPERATOR - (
    leftarg = intset, rightarg = intset, procedure = intset_diff
 );
-        
---
--- test
-
-CREATE TABLE test_intset (
-	a	intset
-);
-
-INSERT INTO test_intset VALUES ('{1,2}');
-INSERT INTO test_intset VALUES ('{1,2,3}');
-
-SELECT * FROM test_intset;
-
--- clean up the example
-DROP TABLE test_intset;
-DROP TYPE intset CASCADE;
