@@ -122,8 +122,10 @@ IntSet *newIntSetFromString(char *input) {
             }
             case '}': {
                 if (leftBrace != 1) {
-                    errorInput = 1;
-                    break;
+                    ereport(ERROR,
+							(errcode(ERRCODE_DATATYPE_MISMATCH),
+							errmsg("error data format")));
+					return NULL;
                 }
                 if(hasNumber > 0) {
                     add(list, number);
@@ -135,8 +137,10 @@ IntSet *newIntSetFromString(char *input) {
                 break;
             case ',': {
                 if (commaFlag > 0) {
-                    errorInput = 1;
-                    break;
+                    ereport(ERROR,
+							(errcode(ERRCODE_DATATYPE_MISMATCH),
+							errmsg("error data format")));
+					return NULL;
                 }
                 add(list, number);
                 commaFlag = 1;
@@ -146,14 +150,18 @@ IntSet *newIntSetFromString(char *input) {
             default: {
                 int num = convert2Number(*ch);
                 if (num < 0) {
-                    errorInput = 1;
-                    break;
+                    ereport(ERROR,
+							(errcode(ERRCODE_DATATYPE_MISMATCH),
+							errmsg("error data format")));
+					return NULL;
                 } else {
                     hasNumber = 1;
                     number = number * 10 + num;
 					if (number < 0){
-                        errorInput = 1;
-                        break;
+                        ereport(ERROR,
+								(errcode(ERRCODE_DATATYPE_MISMATCH),
+								errmsg("error data format")));
+						return NULL;
                     }
                     commaFlag = 0;
                 }
