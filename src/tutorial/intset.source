@@ -15,7 +15,16 @@ CREATE TYPE intset (
    output = intset_out,
 );
 
+-- operate functions
+CREATE FUNCTION intset_ein(integer, intset)
+   RETURNS bool
+   AS '_OBJWD_/intset'
+   LANGUAGE C IMMUTABLE STRICT;
 
+CREATE OPERATOR ? (
+   leftarg = integer, rightarg = intset, procedure = intset_ein,
+);
+        
 --
 -- test
 

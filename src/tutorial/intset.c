@@ -338,3 +338,32 @@ Datum
 	char *result = toString(set);
 	PG_RETURN_CSTRING(result);
 }
+
+
+
+/*****************************************************************************
+ * New Operators
+ * 
+ *****************************************************************************/
+
+/*
+ * in
+ * 1 ? {1,2} -> true
+ */
+
+PG_FUNCTION_INFO_V1(intset_ein);
+
+Datum
+	intset_ein(PG_FUNCTION_ARGS)
+{
+	int32 a = PG_GETARG_INT32(0);
+	IntSet *b = (IntSet *)PG_GETARG_POINTER(1);
+
+	for (int i = 0; i < b->size; i++)
+	{
+		if(a == b->data[i]){
+			PG_RETURN_BOOL(true);
+		}
+	}
+	PG_RETURN_BOOL(false);
+}
