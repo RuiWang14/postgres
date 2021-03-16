@@ -265,7 +265,9 @@ char *toString(IntSet *intSet)
 		return "{}";
 	}
 
-	str = "";
+	str = palloc(sizeof(char) *  1);
+	strcpy(str, "");
+
 	if (str == NULL)
 	{
 		ereport(ERROR,
@@ -273,7 +275,7 @@ char *toString(IntSet *intSet)
 				 errmsg("error palloc str")));
 	}
 
-	number = palloc(sizeof(char) * (strlen("2147483647") + strlen("\0")));
+	number = palloc(sizeof(char) * (strlen("2147483647") + 1));
 	if (number == NULL)
 	{
 		ereport(ERROR,
@@ -305,10 +307,11 @@ char *toString(IntSet *intSet)
 			}
 			temp = psprintf("%s,%s", str, number);
 		}
+		pfree(str);
 		str = temp;
 	}
 
-	result = palloc(sizeof(char) * (strlen("{}") + strlen(str) + strlen("\0")));
+	result = palloc(sizeof(char) * (strlen("{}") + strlen(str) + 1));
 	if (result == NULL)
 	{
 		ereport(ERROR,
