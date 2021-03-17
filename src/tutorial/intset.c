@@ -29,6 +29,7 @@ char *toString(IntSet *intSet);
 bool contain(IntSet *setA, IntSet *setB);
 int partition(int *arr, int low, int high);
 void quick_sort(int *arr, int start, int end);
+bool binarySearch(int *a, int n, int key);
 
 IntSet *newIntSet(int size)
 {
@@ -265,7 +266,7 @@ char *toString(IntSet *intSet)
 		return "{}";
 	}
 
-	str = palloc(sizeof(char) *  1);
+	str = palloc(sizeof(char) * 1);
 	strcpy(str, "");
 
 	if (str == NULL)
@@ -329,15 +330,7 @@ bool contain(IntSet *setA, IntSet *setB)
 {
 	for (int i = 0; i < setB->size; i++)
 	{
-		bool contain = false;
-		for (int j = 0; j < setA->size; j++)
-		{
-			if (setB->data[i] == setA->data[j])
-			{
-				contain = true;
-				break;
-			}
-		}
+		bool contain = binarySearch(setA->data, setA->size, setB->data[i]);
 		if (contain == false)
 		{
 			return false;
@@ -376,6 +369,27 @@ void quick_sort(int *arr, int start, int end)
 		quick_sort(arr, pos + 1, end);
 	}
 	return;
+}
+
+bool binarySearch(int *a, int n, int key)
+{
+	int mid;
+	int midVal;
+	int low = 0;
+	int high = n - 1;
+
+	while (low <= high)
+	{
+		mid = (low + high) / 2;
+		midVal = a[mid];
+		if (midVal < key)
+			low = mid + 1;
+		else if (midVal > key)
+			high = mid - 1;
+		else
+			return true;
+	}
+	return false;
 }
 
 /*****************************************************************************
@@ -537,13 +551,12 @@ Datum
 
 	for (int i = 0; i < setA->size; i++)
 	{
-		for (int j = 0; j < setB->size; j++)
+		bool contain = binarySearch(setB->data, setB->size, setA->data[i]);
+		if (contain == true)
 		{
-			if (setA->data[i] == setB->data[j])
-			{
-				list[size++] = setA->data[i];
-			}
+			list[size++] = setA->data[i];
 		}
+		
 	}
 
 	set = newIntSet(size);
@@ -577,15 +590,7 @@ Datum
 
 	for (int i = 0; i < setA->size; i++)
 	{
-		bool find = false;
-		for (int j = 0; j < setB->size; j++)
-		{
-			if (setA->data[i] == setB->data[j])
-			{
-				find = true;
-				break;
-			}
-		}
+		bool find = binarySearch(setB->data, setB->size, setA->data[i]);
 		if (find == false)
 		{
 			list[len++] = setA->data[i];
@@ -621,15 +626,7 @@ Datum
 
 	for (int i = 0; i < setA->size; i++)
 	{
-		bool find = false;
-		for (int j = 0; j < setB->size; j++)
-		{
-			if (setA->data[i] == setB->data[j])
-			{
-				find = true;
-				break;
-			}
-		}
+		bool find = binarySearch(setB->data, setB->size, setA->data[i]);
 		if (find == false)
 		{
 			list[len++] = setA->data[i];
@@ -638,15 +635,7 @@ Datum
 
 	for (int i = 0; i < setB->size; i++)
 	{
-		bool find = false;
-		for (int j = 0; j < setA->size; j++)
-		{
-			if (setB->data[i] == setA->data[j])
-			{
-				find = true;
-				break;
-			}
-		}
+		bool find = binarySearch(setA->data, setA->size, setB->data[i]);
 		if (find == false)
 		{
 			list[len++] = setB->data[i];
@@ -682,15 +671,7 @@ Datum
 
 	for (int i = 0; i < setA->size; i++)
 	{
-		bool find = false;
-		for (int j = 0; j < setB->size; j++)
-		{
-			if (setA->data[i] == setB->data[j])
-			{
-				find = true;
-				break;
-			}
-		}
+		bool find = binarySearch(setB->data, setB->size, setA->data[i]);
 		if (find == false)
 		{
 			list[len++] = setA->data[i];
